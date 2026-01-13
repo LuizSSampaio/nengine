@@ -7,6 +7,9 @@ pub fn run() !void {
     var window = try platform.Window.create(600, 600, "NEngine Window", null);
     defer window.destroy();
 
+    platform.makeContextCurrent(&window);
+    platform.swapInterval(1);
+
     while (!window.shouldClose()) {
         platform.pollEvents();
 
