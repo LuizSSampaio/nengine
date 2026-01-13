@@ -9,7 +9,7 @@ pub const Window = struct {
     }
 
     pub fn destroy(window: *Window) void {
-        window.pointer.shouldClose();
+        window.pointer.destroy();
     }
 
     pub fn shouldClose(window: *Window) bool {
