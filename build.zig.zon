@@ -3,7 +3,12 @@
     .version = "0.0.0",
     .fingerprint = 0x1f8f53e8674f747c,
     .minimum_zig_version = "0.16.0-dev.2187+e2338edb4",
-    .dependencies = .{},
+    .dependencies = .{
+        .zglfw = .{
+            .url = "git+https://github.com/zig-gamedev/zglfw.git#d9c06187e8b23e91b2ba6865d265e4213e5e7d09",
+            .hash = "zglfw-0.10.0-dev-zgVDNC64IQCeL-_eVOA27Wa50WVitrJswOZVvgcXmIsy",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

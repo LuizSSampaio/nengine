@@ -4,10 +4,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const zglfw = b.dependency("zglfw", .{});
+
     const platform_mod = b.addModule("platform", .{
         .root_source_file = b.path("src/platform/root.zig"),
         .target = target,
+        .imports = &.{
+            .{ .name = "glfw", .module = zglfw.module("root") },
+        },
     });
+
+    if (target.result.os.tag != .emscripten) {
+        platform_mod.linkLibrary(zglfw.artifact("glfw"));
+    }
 
     const mod = b.addModule("nengine", .{
         .root_source_file = b.path("src/root.zig"),
