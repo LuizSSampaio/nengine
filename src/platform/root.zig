@@ -9,3 +9,7 @@ pub fn init() !void {
 pub fn terminate() void {
     glfw.terminate();
 }
+
+pub fn pollEvents() void {
+    glfw.pollEvents();
+}
