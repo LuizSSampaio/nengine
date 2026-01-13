@@ -1,9 +1,9 @@
 const glfw = @import("glfw");
 
 pub fn init() !void {
-    glfw.init();
+    try glfw.init();
 }
 
-pub fn terminate() !void {
+pub fn terminate() void {
     glfw.terminate();
 }
