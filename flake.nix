@@ -21,7 +21,13 @@
           packages = with pkgs; [
             zig
             zls
+
+            mesa
+            libGL
             libx11
+
+            libxkbcommon
+            wayland
           ];
 
           shellHook = ''
