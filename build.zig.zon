@@ -1,0 +1,12 @@
+.{
+    .name = .nengine,
+    .version = "0.0.0",
+    .fingerprint = 0x1f8f53e8674f747c,
+    .minimum_zig_version = "0.16.0-dev.2187+e2338edb4",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
