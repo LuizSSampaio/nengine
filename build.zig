@@ -4,9 +4,17 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const platform_mod = b.addModule("platform", .{
+        .root_source_file = b.path("src/platform/root.zig"),
+        .target = target,
+    });
+
     const mod = b.addModule("nengine", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
+        .imports = &.{
+            .{ .name = "platform", .module = platform_mod },
+        },
     });
 
     const exe = b.addExecutable(.{
