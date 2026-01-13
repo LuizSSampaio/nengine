@@ -1,6 +1,6 @@
 const glfw = @import("glfw");
 
-pub const window = @import("window.zig");
+pub const Window = @import("window.zig").Window;
 
 pub fn init() !void {
     try glfw.init();
