@@ -21,6 +21,7 @@
           packages = with pkgs; [
             zig
             zls
+            libx11
           ];
 
           shellHook = ''
