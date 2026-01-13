@@ -1,18 +1,15 @@
-//! By convention, root.zig is the root source file when making a package.
-const std = @import("std");
-const Io = std.Io;
+const platform = @import("platform");
 
-/// This is a documentation comment to explain the `printAnotherMessage` function below.
-///
-/// Accepting an `Io.Writer` instance is a handy way to write reusable code.
-pub fn printAnotherMessage(writer: *Io.Writer) Io.Writer.Error!void {
-    try writer.print("Run `zig build test` to run the tests.\n", .{});
-}
+pub fn run() !void {
+    try platform.init();
+    defer platform.terminate();
 
-pub fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
+    var window = try platform.Window.create(600, 600, "NEngine Window", null);
+    defer window.destroy();
 
-test "basic add functionality" {
-    try std.testing.expect(add(3, 7) == 10);
+    while (!window.shouldClose()) {
+        platform.pollEvents();
+
+        window.swapBuffers();
+    }
 }
