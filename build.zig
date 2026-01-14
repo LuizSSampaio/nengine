@@ -18,11 +18,20 @@ pub fn build(b: *std.Build) void {
         platform_mod.linkLibrary(zglfw.artifact("glfw"));
     }
 
+    const renderer_mod = b.addModule("renderer", .{
+        .root_source_file = b.path("src/renderer/root.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "platform", .module = platform_mod },
+        },
+    });
+
     const mod = b.addModule("nengine", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .imports = &.{
             .{ .name = "platform", .module = platform_mod },
+            .{ .name = "renderer", .module = renderer_mod },
         },
     });
 
