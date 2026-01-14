@@ -1,57 +1,43 @@
+const std = @import("std");
+
 const opengl = @import("opengl");
 
-pub const BackendKind = enum { opengl };
+const backend_vtable = @import("backend.zig");
+
+pub const BackendKind = enum {
+    opengl,
+};
+
+pub const Backend = struct {
+    init: *const fn (*anyopaque) anyerror!void,
+    deinit: *const fn (*anyopaque) void,
+    beginFrame: *const fn (*anyopaque) anyerror!void,
+    endFrame: *const fn (*anyopaque) anyerror!void,
+};
 
 pub const Renderer = struct {
     ctx: *anyopaque,
     backend: *const Backend,
+    allocator: std.mem.Allocator,
 
-    const Backend = struct {
-        init: fn (*anyopaque) anyerror!void,
-        deinit: fn (*anyopaque) void,
-        beginFrame: fn (*anyopaque) anyerror!void,
-        endFrame: fn (*anyopaque) anyerror!void,
-    };
-
-    pub fn create(backend: BackendKind) Renderer {
-        return switch (backend) {
-            .opengl => createOpenGLRenderer(),
+    pub fn create(allocator: std.mem.Allocator, kind: BackendKind) !Renderer {
+        return switch (kind) {
+            .opengl => {
+                const ctx = try allocator.create(opengl.OpenGLRenderer);
+                ctx.* = .{};
+                return .{
+                    .ctx = ctx,
+                    .backend = &backend_vtable.VTable(opengl.OpenGLRenderer).backend,
+                    .allocator = allocator,
+                };
+            },
         };
     }
 
-    fn createOpenGLRenderer() Renderer {
-        const gl = opengl.OpenGLRenderer{};
-        const backend = Backend{
-            .init = struct {
-                fn call(ctx: *anyopaque) anyerror!void {
-                    const self = @as(*opengl.OpenGLRenderer, @ptrCast(@alignCast(ctx)));
-                    try self.init();
-                }
-            }.call,
-            .deinit = struct {
-                fn call(ctx: *anyopaque) void {
-                    const self = @as(*opengl.OpenGLRenderer, @ptrCast(@alignCast(ctx)));
-                    self.deinit();
-                }
-            }.call,
-            .beginFrame = struct {
-                fn call(ctx: *anyopaque) anyerror!void {
-                    const self = @as(*opengl.OpenGLRenderer, @ptrCast(@alignCast(ctx)));
-                    try self.beginFrame();
-                }
-            }.call,
-            .endFrame = struct {
-                fn call(ctx: *anyopaque) anyerror!void {
-                    const self = @as(*opengl.OpenGLRenderer, @ptrCast(@alignCast(ctx)));
-                    try self.endFrame();
-                }
-            }.call,
-        };
-
-        return .{
-            .ctx = gl,
-            .backend = backend,
-        };
+    pub fn destroy(self: *Renderer) void {
+        self.backend.deinit(self.ctx);
+        const typed_ctx: *opengl.OpenGLRenderer = @ptrCast(@alignCast(self.ctx));
+        self.allocator.destroy(typed_ctx);
     }
 
     pub fn init(self: *Renderer) anyerror!void {
