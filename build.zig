@@ -5,7 +5,6 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const zglfw = b.dependency("zglfw", .{});
-
     const platform_mod = b.addModule("platform", .{
         .root_source_file = b.path("src/platform/root.zig"),
         .target = target,
@@ -18,11 +17,13 @@ pub fn build(b: *std.Build) void {
         platform_mod.linkLibrary(zglfw.artifact("glfw"));
     }
 
+    const zopengl = b.dependency("zopengl", .{});
     const renderer_mod = b.addModule("renderer", .{
         .root_source_file = b.path("src/renderer/root.zig"),
         .target = target,
         .imports = &.{
             .{ .name = "platform", .module = platform_mod },
+            .{ .name = "opengl", .module = zopengl.module("root") },
         },
     });
 
