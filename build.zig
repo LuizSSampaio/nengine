@@ -18,12 +18,20 @@ pub fn build(b: *std.Build) void {
     }
 
     const zopengl = b.dependency("zopengl", .{});
+    const opengl_backend_mod = b.addModule("opengl_backend", .{
+        .root_source_file = b.path("src/renderer/backend/opengl/root.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "opengl", .module = zopengl.module("root") },
+        },
+    });
+
     const renderer_mod = b.addModule("renderer", .{
         .root_source_file = b.path("src/renderer/root.zig"),
         .target = target,
         .imports = &.{
             .{ .name = "platform", .module = platform_mod },
-            .{ .name = "opengl", .module = zopengl.module("root") },
+            .{ .name = "opengl", .module = opengl_backend_mod },
         },
     });
 
