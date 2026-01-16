@@ -9,8 +9,8 @@
             .hash = "zglfw-0.10.0-dev-zgVDNC64IQCeL-_eVOA27Wa50WVitrJswOZVvgcXmIsy",
         },
         .zopengl = .{
-            .url = "git+https://github.com/zig-gamedev/zopengl.git#526f868b84d24dcbbf97a20fbcca17418f0708c5",
-            .hash = "zopengl-0.6.0-dev-5-tnz-G3CwB-4D72AAxsMmXZR_k8nwASrWcdo8CBVnoc",
+            .url = "git+https://github.com/fourlexboehm/zopengl.git#9bd041a766e21a22963a17b5e49c07d37394ee5a",
+            .hash = "zopengl-0.6.0-dev-5-tnz1S4CwAgYCQeg_9QQ3z9-zDAQcSH-L6DkTHzOlcG",
         },
     },
     .paths = .{
