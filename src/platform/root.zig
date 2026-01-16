@@ -21,3 +21,7 @@ pub fn swapInterval(interval: c_int) void {
 pub fn pollEvents() void {
     glfw.pollEvents();
 }
+
+pub fn windowHint(comptime hint: glfw.WindowHint, value: anytype) void {
+    glfw.windowHint(hint, value);
+}
