@@ -2,6 +2,7 @@ const std = @import("std");
 
 const AllocatorContext = @import("allocator_context.zig").AllocatorContext;
 const backend_factory = @import("backend_factory.zig");
+const commands = @import("commands.zig");
 
 pub const BackendKind = enum {
     opengl,
@@ -12,6 +13,8 @@ pub const Backend = struct {
     deinit: *const fn (*anyopaque) void,
     beginFrame: *const fn (*anyopaque) anyerror!void,
     endFrame: *const fn (*anyopaque) anyerror!void,
+
+    clear: *const fn (*anyopaque, ?[4]f32, ?f32, ?u32) anyerror!void,
 };
 
 pub const Renderer = struct {
@@ -48,5 +51,9 @@ pub const Renderer = struct {
     pub fn endFrame(self: *Renderer) anyerror!void {
         try self.backend.endFrame(self.ctx);
         self.allocator_ctx.resetArena();
+    }
+
+    pub fn clear(self: *Renderer, cmd: commands.ClearCommand) anyerror!void {
+        self.backend.clear(self.ctx, cmd.color, cmd.depth, cmd.stencil);
     }
 };

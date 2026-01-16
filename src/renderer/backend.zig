@@ -9,9 +9,7 @@ pub fn VTable(comptime Impl: type) type {
             .beginFrame = wrapFallible(Impl, "beginFrame"),
             .endFrame = wrapFallible(Impl, "endFrame"),
 
-            .clearColor = wrapFallible(Impl, "clearColor"),
-            .clearDepth = wrapFallible(Impl, "clearDepth"),
-            .clearStencil = wrapFallible(Impl, "clearStencil"),
+            .clear = wrapFallible(Impl, "clear"),
         };
     };
 }
