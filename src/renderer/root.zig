@@ -1,8 +1,7 @@
 const std = @import("std");
 
-const opengl = @import("opengl");
-
-const backend_vtable = @import("backend.zig");
+const AllocatorContext = @import("allocator_context.zig").AllocatorContext;
+const backend_factory = @import("backend_factory.zig");
 
 pub const BackendKind = enum {
     opengl,
@@ -18,34 +17,28 @@ pub const Backend = struct {
 pub const Renderer = struct {
     ctx: *anyopaque,
     backend: *const Backend,
-    allocator: std.mem.Allocator,
+    allocator_ctx: AllocatorContext,
 
-    pub fn create(allocator: std.mem.Allocator, kind: BackendKind) !Renderer {
-        return switch (kind) {
-            .opengl => {
-                const ctx = try allocator.create(opengl.OpenGLRenderer);
-                ctx.* = .{};
-                return .{
-                    .ctx = ctx,
-                    .backend = &backend_vtable.VTable(opengl.OpenGLRenderer).backend,
-                    .allocator = allocator,
-                };
-            },
+    pub fn create(kind: BackendKind) !Renderer {
+        var allocator_ctx = try AllocatorContext.init();
+        errdefer allocator_ctx.deinit();
+
+        const backend_ctx = try backend_factory.create(kind, allocator_ctx.allocator());
+
+        var renderer = Renderer{
+            .ctx = backend_ctx.ctx,
+            .backend = backend_ctx.vtable,
+            .allocator_ctx = allocator_ctx,
         };
+
+        try renderer.backend.init(renderer.ctx);
+
+        return renderer;
     }
 
     pub fn destroy(self: *Renderer) void {
         self.backend.deinit(self.ctx);
-        const typed_ctx: *opengl.OpenGLRenderer = @ptrCast(@alignCast(self.ctx));
-        self.allocator.destroy(typed_ctx);
-    }
-
-    pub fn init(self: *Renderer) anyerror!void {
-        try self.backend.init(self.ctx);
-    }
-
-    pub fn deinit(self: *Renderer) void {
-        self.backend.deinit(self.ctx);
+        self.allocator_ctx.deinit();
     }
 
     pub fn beginFrame(self: *Renderer) anyerror!void {
@@ -54,5 +47,6 @@ pub const Renderer = struct {
 
     pub fn endFrame(self: *Renderer) anyerror!void {
         try self.backend.endFrame(self.ctx);
+        self.allocator_ctx.resetArena();
     }
 };
