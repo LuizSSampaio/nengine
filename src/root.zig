@@ -25,6 +25,8 @@ pub fn run() !void {
         platform.pollEvents();
         try render.beginFrame();
 
+        try render.clear(.{ .color = .{ 0.1, 0.2, 0.3, 1.0 } });
+
         try render.endFrame();
         window.swapBuffers();
     }
