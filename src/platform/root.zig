@@ -2,6 +2,8 @@ const glfw = @import("glfw");
 
 pub const Window = @import("window.zig").Window;
 
+pub const getProcAddress = glfw.getProcAddress;
+
 pub fn init() !void {
     try glfw.init();
 }

@@ -1,43 +1,40 @@
 const std = @import("std");
 
+pub const Pipeline = enum { opengl };
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const zglfw = b.dependency("zglfw", .{});
+    const pipeline = b.option(Pipeline, "pipeline", "renderer pipeline to be used") orelse Pipeline.opengl;
+
+    const options = b.addOptions();
+    options.addOption(Pipeline, "pipeline", pipeline);
+
     const platform_mod = b.addModule("platform", .{
         .root_source_file = b.path("src/platform/root.zig"),
         .target = target,
-        .imports = &.{
-            .{ .name = "glfw", .module = zglfw.module("root") },
-        },
-    });
-
-    if (target.result.os.tag != .emscripten) {
-        platform_mod.linkLibrary(zglfw.artifact("glfw"));
-    }
-
-    const zopengl = b.dependency("zopengl", .{});
-    const opengl_backend_mod = b.addModule("opengl_backend", .{
-        .root_source_file = b.path("src/renderer/backend/opengl/root.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "opengl", .module = zopengl.module("root") },
-        },
+        .optimize = optimize,
     });
 
     const renderer_mod = b.addModule("renderer", .{
         .root_source_file = b.path("src/renderer/root.zig"),
         .target = target,
+        .optimize = optimize,
         .imports = &.{
             .{ .name = "platform", .module = platform_mod },
-            .{ .name = "opengl", .module = opengl_backend_mod },
         },
     });
+    renderer_mod.addOptions("build_options", options);
+
+    switch (pipeline) {
+        .opengl => enableOpenGL(b, target, optimize, platform_mod, renderer_mod),
+    }
 
     const mod = b.addModule("nengine", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
+        .optimize = optimize,
         .imports = &.{
             .{ .name = "platform", .module = platform_mod },
             .{ .name = "renderer", .module = renderer_mod },
@@ -84,4 +81,25 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
+}
+
+fn enableOpenGL(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, platform: *std.Build.Module, renderer: *std.Build.Module) void {
+    const zglfw = b.dependency("zglfw", .{});
+    platform.addImport("glfw", zglfw.module("root"));
+
+    if (target.result.os.tag != .emscripten) {
+        platform.linkLibrary(zglfw.artifact("glfw"));
+    }
+
+    const zopengl = b.dependency("zopengl", .{});
+    const opengl_backend_mod = b.addModule("opengl_backend", .{
+        .root_source_file = b.path("src/renderer/backend/opengl/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "opengl", .module = zopengl.module("root") },
+        },
+    });
+
+    renderer.addImport("opengl", opengl_backend_mod);
 }

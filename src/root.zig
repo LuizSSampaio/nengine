@@ -1,3 +1,4 @@
+const std = @import("std");
 const platform = @import("platform");
 const renderer = @import("renderer");
 
@@ -18,8 +19,16 @@ pub fn run() !void {
     platform.makeContextCurrent(&window);
     platform.swapInterval(1);
 
-    var render = try renderer.Renderer.create(.opengl);
-    defer render.destroy();
+    var gpa: std.heap.DebugAllocator(.{}) = .init;
+    defer {
+        const status = gpa.deinit();
+        if (status == .leak) std.debug.panic("Memory leak detected", .{});
+    }
+
+    const allocator = gpa.allocator();
+
+    var render = try renderer.Renderer.init(allocator, platform.getProcAddress);
+    defer render.deinit();
 
     while (!window.shouldClose()) {
         platform.pollEvents();

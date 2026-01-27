@@ -1,16 +1,20 @@
 const opengl = @import("opengl");
 const gl = opengl.bindings;
 
-pub const OpenGLRenderer = struct {
-    pub fn init(_: *OpenGLRenderer) !void {}
+pub const Backend = struct {
+    pub fn init(loader: *const fn ([*:0]const u8) callconv(.c) ?*const anyopaque) !Backend {
+        try opengl.loadCoreProfile(loader, 3, 3);
 
-    pub fn deinit(_: *OpenGLRenderer) void {}
+        return .{};
+    }
 
-    pub fn beginFrame(_: *OpenGLRenderer) !void {}
+    pub fn deinit(_: *Backend) void {}
 
-    pub fn endFrame(_: *OpenGLRenderer) !void {}
+    pub fn beginFrame(_: *Backend) !void {}
 
-    pub fn clear(_: *OpenGLRenderer, color: ?[4]f32, depth: ?f32, stencil: ?u32) !void {
+    pub fn endFrame(_: *Backend) !void {}
+
+    pub fn clear(_: *Backend, color: ?[4]f32, depth: ?f32, stencil: ?u32) !void {
         var mask: gl.Bitfield = 0;
 
         if (color) |data| {
