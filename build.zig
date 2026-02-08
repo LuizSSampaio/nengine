@@ -11,10 +11,19 @@ pub fn build(b: *std.Build) void {
     const options = b.addOptions();
     options.addOption(Pipeline, "pipeline", pipeline);
 
+    const logger_mod = b.addModule("logger", .{
+        .root_source_file = b.path("src/logger/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const platform_mod = b.addModule("platform", .{
         .root_source_file = b.path("src/platform/root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "logger", .module = logger_mod },
+        },
     });
 
     const renderer_mod = b.addModule("renderer", .{
@@ -22,6 +31,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .imports = &.{
+            .{ .name = "logger", .module = logger_mod },
             .{ .name = "platform", .module = platform_mod },
         },
     });
@@ -36,6 +46,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .imports = &.{
+            .{ .name = "logger", .module = logger_mod },
             .{ .name = "platform", .module = platform_mod },
             .{ .name = "renderer", .module = renderer_mod },
         },

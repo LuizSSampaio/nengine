@@ -2,6 +2,8 @@ const std = @import("std");
 const platform = @import("platform");
 const renderer = @import("renderer");
 
+pub const logger = @import("logger");
+
 pub fn run() !void {
     try platform.init();
     defer platform.terminate();
