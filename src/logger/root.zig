@@ -12,6 +12,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
 }
 pub fn deinit() void {}
 
+pub const Level = enum {
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal,
+};
+
 pub const Logger = struct {
     pool: *pool.Pool,
 
