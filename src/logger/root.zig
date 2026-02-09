@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const pool = @import("pool.zig");
+
 var initialized = false;
 
 pub fn init(allocator: std.mem.Allocator) !void {
