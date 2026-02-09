@@ -13,6 +13,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn deinit() void {}
 
 pub const Logger = struct {
+    pool: *pool.Pool,
+
     pub fn init() Logger {}
     pub fn deinit() void {}
 };
