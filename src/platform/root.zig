@@ -6,6 +6,13 @@ pub const getProcAddress = glfw.getProcAddress;
 
 pub fn init() !void {
     try glfw.init();
+
+    glfw.windowHint(.client_api, .opengl_api);
+    glfw.windowHint(.context_version_major, 3);
+    glfw.windowHint(.context_version_minor, 3);
+    glfw.windowHint(.opengl_profile, .opengl_core_profile);
+    glfw.windowHint(.opengl_forward_compat, true);
+    glfw.windowHint(.doublebuffer, true);
 }
 
 pub fn terminate() void {
@@ -22,8 +29,4 @@ pub fn swapInterval(interval: c_int) void {
 
 pub fn pollEvents() void {
     glfw.pollEvents();
-}
-
-pub fn windowHint(comptime hint: glfw.WindowHint, value: anytype) void {
-    glfw.windowHint(hint, value);
 }
