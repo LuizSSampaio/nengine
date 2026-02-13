@@ -9,13 +9,10 @@ pub fn build(b: *std.Build) void {
     const options = b.addOptions();
     options.addOption([]const u8, "title", title);
 
-    const nengine = b.dependency("nengine", .{
+    const nengine = b.dependency("nengine_zig", .{
         .target = target,
         .optimize = optimize,
     });
-
-    const nengine_lib = nengine.artifact("nengine");
-    b.installArtifact(nengine_lib);
 
     const game_lib = b.addLibrary(.{
         .name = title,
@@ -24,15 +21,17 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/root.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "nengine", .module = nengine.module("nengine") },
+            },
         }),
     });
     b.installArtifact(game_lib);
 
     const exe = b.addExecutable(.{
         .name = title,
-        .root_module = nengine.module("nengine"),
+        .root_module = nengine.module("entry"),
     });
-    exe.root_module.linkLibrary(nengine_lib);
     exe.root_module.linkLibrary(game_lib);
     b.installArtifact(exe);
 
