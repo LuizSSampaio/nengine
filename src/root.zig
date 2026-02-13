@@ -3,11 +3,17 @@ const platform = @import("platform");
 const renderer = @import("renderer");
 const logger = @import("logger");
 
-pub fn run() !void {
-    try platform.init();
+export fn run() callconv(.c) void {
+    platform.init() catch {
+        // TODO: Add log
+        return;
+    };
     defer platform.terminate();
 
-    var window = try platform.Window.create(600, 600, "NEngine Window", null);
+    var window = platform.Window.create(600, 600, "NEngine Window", null) catch {
+        // TODO: Add log
+        return;
+    };
     defer window.destroy();
 
     platform.makeContextCurrent(&window);
@@ -21,16 +27,28 @@ pub fn run() !void {
 
     const allocator = gpa.allocator();
 
-    var render = try renderer.Renderer.init(allocator, platform.getProcAddress);
+    var render = renderer.Renderer.init(allocator, platform.getProcAddress) catch {
+        // TODO: Add log
+        return;
+    };
     defer render.deinit();
 
     while (!window.shouldClose()) {
         platform.pollEvents();
-        try render.beginFrame();
+        render.beginFrame() catch {
+            // TODO: Add log
+            return;
+        };
 
-        try render.clear(.{ .color = .{ 0.1, 0.2, 0.3, 1.0 } });
+        render.clear(.{ .color = .{ 0.1, 0.2, 0.3, 1.0 } }) catch {
+            // TODO: Add log
+            return;
+        };
 
-        try render.endFrame();
+        render.endFrame() catch {
+            // TODO: Add log
+            return;
+        };
         window.swapBuffers();
     }
 }
