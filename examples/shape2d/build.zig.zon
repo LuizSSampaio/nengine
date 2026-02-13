@@ -1,0 +1,16 @@
+.{
+    .name = .shape2d,
+    .version = "0.0.0",
+    .fingerprint = 0x82959e654df09a57,
+    .minimum_zig_version = "0.16.0-dev.2187+e2338edb4",
+    .dependencies = .{
+        .nengine = .{
+            .path = "../../",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

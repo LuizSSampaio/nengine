@@ -1,7 +1,8 @@
 const std = @import("std");
 
-const nengine = @import("nengine");
+// const nengine = @import("nengine");
 
 pub fn main() !void {
-    try nengine.run();
+    std.debug.print("Hello, World!\n", .{});
+    // try nengine.run();
 }
