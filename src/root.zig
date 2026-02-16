@@ -1,17 +1,19 @@
 const std = @import("std");
+
+const logger = @import("logger");
 const platform = @import("platform");
 const renderer = @import("renderer");
-const logger = @import("logger");
 
 export fn run() callconv(.c) void {
+    logger.info().string("engine", "Starting Engine").log();
     platform.init() catch {
-        // TODO: Add log
+        logger.fatal().string("@err", "Failed to initialize platform").log();
         return;
     };
     defer platform.terminate();
 
     var window = platform.Window.create(600, 600, "NEngine Window", null) catch {
-        // TODO: Add log
+        logger.fatal().string("@err", "Failed to create window").log();
         return;
     };
     defer window.destroy();
@@ -28,7 +30,7 @@ export fn run() callconv(.c) void {
     const allocator = gpa.allocator();
 
     var render = renderer.Renderer.init(allocator, platform.getProcAddress) catch {
-        // TODO: Add log
+        logger.fatal().string("@err", "Failed to initialize renderer").log();
         return;
     };
     defer render.deinit();
