@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Format = @import("format.zig").Format;
 const pool = @import("pool.zig");
 
 var initialized = false;
@@ -22,6 +23,10 @@ pub const Level = enum {
 
 pub const Logger = struct {
     pool: *pool.Pool,
+    inner: union(enum) {
+        format: *Format,
+        noop: void,
+    },
 
     pub fn init() Logger {}
     pub fn deinit() void {}
