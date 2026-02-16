@@ -1,6 +1,6 @@
 const logger = @import("root.zig");
 
-pub const Config = struct {
+pub const Config = extern struct {
     pool_size: usize = 32,
     buffer_size: usize = 4096,
     minimum_level: logger.Level = .Info,

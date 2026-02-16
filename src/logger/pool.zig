@@ -6,7 +6,7 @@ const Format = @import("format.zig").Format;
 const log = @import("root.zig");
 const Logger = log.Logger;
 
-const noop = Logger{ .pool = undefined, .inner = .{ .noop = {} } };
+const noop = Logger{ .pool = undefined, .noop = true, .format = undefined };
 
 pub const Pool = struct {
     config: Config,
@@ -161,17 +161,15 @@ pub const Pool = struct {
         errdefer self.allocator.destroy(fmt);
 
         fmt.* = try Format.init(self.allocator, self);
-        return .{ .pool = self, .inner = .{ .format = fmt } };
+        return .{ .pool = self, .noop = false, .format = fmt };
     }
 
     pub fn destroyLogger(self: *@This(), l: Logger) void {
-        switch (l.inner) {
-            .format => |fmt| {
-                fmt.deinit(self.allocator);
-                self.allocator.destroy(fmt);
-            },
-            else => unreachable,
+        if (l.noop) {
+            unreachable;
         }
+        l.format.deinit(self.allocator);
+        self.allocator.destroy(l.format);
     }
 };
 

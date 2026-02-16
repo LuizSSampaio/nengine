@@ -113,35 +113,6 @@ pub const Format = struct {
         };
     }
 
-    pub fn stringZ(self: *@This(), key: []const u8, nvalue: ?[*:0]const u8) void {
-        if (nvalue == null) {
-            self.writeNull(key);
-            return;
-        }
-        self.string(key, std.mem.span(nvalue));
-    }
-
-    pub fn stringSafe(self: *@This(), key: []const u8, nvalue: ?[]const u8) void {
-        const value = nvalue orelse {
-            self.writeNull(key);
-            return;
-        };
-
-        var aw = self.buffer.attributeWriter(6 + key.len + value.len, true) orelse return;
-        aw.writeByte('"');
-        aw.writeAllAll(key, "\":\"");
-        aw.writeAllAll(value, "\",");
-        aw.done();
-    }
-
-    pub fn stringSafeZ(self: *@This(), key: []const u8, value: ?[*:0]const u8) void {
-        if (value) |v| {
-            self.stringSafe(key, std.mem.span(v));
-        } else {
-            self.writeNull(key);
-        }
-    }
-
     pub fn int(self: *@This(), key: []const u8, value: anytype) void {
         const f = switch (@typeInfo(@TypeOf(value))) {
             .optional => blk: {
