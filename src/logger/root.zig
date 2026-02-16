@@ -7,7 +7,7 @@ const Config = @import("config.zig").Config;
 var initialized = false;
 var global: *Pool = undefined;
 
-pub export fn init(config: Config) callconv(.c) c_int {
+export fn logger_init(config: Config) callconv(.c) c_int {
     if (initialized) {
         global.deinit();
     }
@@ -18,14 +18,14 @@ pub export fn init(config: Config) callconv(.c) c_int {
     return 0;
 }
 
-pub export fn deinit() callconv(.c) void {
+export fn logger_deinit() callconv(.c) void {
     if (initialized) {
         global.deinit();
         initialized = false;
     }
 }
 
-pub const Level = enum(u3) {
+pub const Level = enum(u8) {
     Debug,
     Info,
     Warn,
@@ -42,7 +42,7 @@ pub const Logger = extern struct {
     pub fn multiuse(self: @This()) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.multiuse(),
+            inline else => self.format.multiuse(),
         }
         return self;
     }
@@ -50,7 +50,7 @@ pub const Logger = extern struct {
     pub fn ctx(self: @This(), value: []const u8) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.ctx(value),
+            inline else => self.format.ctx(value),
         }
         return self;
     }
@@ -58,7 +58,7 @@ pub const Logger = extern struct {
     pub fn src(self: @This(), value: std.builtin.SourceLocation) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.src(value),
+            inline else => self.format.src(value),
         }
         return self;
     }
@@ -66,7 +66,7 @@ pub const Logger = extern struct {
     pub fn fmt(self: @This(), key: []const u8, comptime format: []const u8, values: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.fmt(key, format, values),
+            inline else => self.format.fmt(key, format, values),
         }
         return self;
     }
@@ -74,7 +74,7 @@ pub const Logger = extern struct {
     pub fn string(self: @This(), key: []const u8, value: ?[]const u8) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.string(key, value),
+            inline else => self.format.string(key, value),
         }
         return self;
     }
@@ -82,7 +82,7 @@ pub const Logger = extern struct {
     pub fn binary(self: @This(), key: []const u8, value: ?[]const u8) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.binary(key, value),
+            inline else => self.format.binary(key, value),
         }
         return self;
     }
@@ -90,7 +90,7 @@ pub const Logger = extern struct {
     pub fn any(self: @This(), key: []const u8, val: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.any(key, val),
+            inline else => self.format.any(key, val),
         }
         return self;
     }
@@ -98,7 +98,7 @@ pub const Logger = extern struct {
     pub fn slice(self: @This(), key: []const u8, values: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.slice(key, values),
+            inline else => self.format.slice(key, values),
         }
         return self;
     }
@@ -106,7 +106,7 @@ pub const Logger = extern struct {
     pub fn sliceFmt(self: @This(), key: []const u8, values: anytype, formatter: SliceItemFormatCallback(@TypeOf(values))) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.sliceFmt(key, values, formatter),
+            inline else => self.format.sliceFmt(key, values, formatter),
         }
         return self;
     }
@@ -114,7 +114,7 @@ pub const Logger = extern struct {
     pub fn int(self: @This(), key: []const u8, value: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.int(key, value),
+            inline else => self.format.int(key, value),
         }
         return self;
     }
@@ -122,7 +122,7 @@ pub const Logger = extern struct {
     pub fn float(self: @This(), key: []const u8, value: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.float(key, value),
+            inline else => self.format.float(key, value),
         }
         return self;
     }
@@ -130,7 +130,7 @@ pub const Logger = extern struct {
     pub fn boolean(self: @This(), key: []const u8, value: anytype) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.boolean(key, value),
+            inline else => self.format.boolean(key, value),
         }
         return self;
     }
@@ -138,7 +138,7 @@ pub const Logger = extern struct {
     pub fn errK(self: @This(), key: []const u8, value: anyerror) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.errK(key, value),
+            inline else => self.format.errK(key, value),
         }
         return self;
     }
@@ -146,7 +146,7 @@ pub const Logger = extern struct {
     pub fn err(self: @This(), value: anyerror) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.err(value),
+            inline else => self.format.err(value),
         }
         return self;
     }
@@ -154,7 +154,7 @@ pub const Logger = extern struct {
     pub fn level(self: @This(), lvl: Level) @This() {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.level(lvl),
+            inline else => self.format.level(lvl),
         }
         return self;
     }
@@ -162,9 +162,9 @@ pub const Logger = extern struct {
     pub fn tryLog(self: @This()) !void {
         switch (self.noop) {
             true => {},
-            inline else => |l| {
-                defer self.maybeRelease(l);
-                if (self.pool.shouldLog(l.lvl)) try l.tryLog();
+            inline else => {
+                defer self.maybeRelease(self.format);
+                if (self.pool.shouldLog(self.format.lvl)) try self.format.tryLog();
             },
         }
     }
@@ -172,9 +172,9 @@ pub const Logger = extern struct {
     pub fn log(self: @This()) void {
         switch (self.noop) {
             true => {},
-            inline else => |l| {
-                if (self.pool.shouldLog(l.lvl)) l.log();
-                self.maybeRelease(l);
+            inline else => {
+                if (self.pool.shouldLog(self.format.lvl)) self.format.log();
+                self.maybeRelease(self.format);
             },
         }
     }
@@ -182,9 +182,9 @@ pub const Logger = extern struct {
     pub fn logTo(self: @This(), out: anytype) !void {
         switch (self.noop) {
             true => {},
-            inline else => |l| {
-                defer self.maybeRelease(l);
-                if (self.pool.shouldLog(l.lvl)) try l.logTo(out);
+            inline else => {
+                defer self.maybeRelease(self.format);
+                if (self.pool.shouldLog(self.format.lvl)) try self.format.logTo(out);
             },
         }
     }
@@ -218,52 +218,52 @@ pub const Logger = extern struct {
     pub fn reset(self: @This()) void {
         switch (self.noop) {
             true => {},
-            inline else => |l| l.reset(),
+            inline else => self.format.reset(),
         }
     }
 };
 
-export fn logger_multiuse(self: Logger) callconv(.c) Logger {
+export fn log_multiuse(self: Logger) callconv(.c) Logger {
     return self.multiuse();
 }
 
-export fn logger_ctx(self: Logger, value: [*:0]const u8) callconv(.c) Logger {
+export fn log_ctx(self: Logger, value: [*:0]const u8) callconv(.c) Logger {
     return self.ctx(std.mem.span(value));
 }
 
-export fn logger_string(self: Logger, key: [*:0]const u8, value: ?[*:0]const u8) callconv(.c) Logger {
+export fn log_string(self: Logger, key: [*:0]const u8, value: ?[*:0]const u8) callconv(.c) Logger {
     return self.string(std.mem.span(key), if (value) |v| std.mem.span(v) else null);
 }
 
-export fn logger_int(self: Logger, key: [*:0]const u8, value: i64) callconv(.c) Logger {
+export fn log_int(self: Logger, key: [*:0]const u8, value: i64) callconv(.c) Logger {
     return self.int(std.mem.span(key), value);
 }
 
-export fn logger_float(self: Logger, key: [*:0]const u8, value: f64) callconv(.c) Logger {
+export fn log_float(self: Logger, key: [*:0]const u8, value: f64) callconv(.c) Logger {
     return self.float(std.mem.span(key), value);
 }
 
-export fn logger_boolean(self: Logger, key: [*:0]const u8, value: bool) callconv(.c) Logger {
+export fn log_boolean(self: Logger, key: [*:0]const u8, value: bool) callconv(.c) Logger {
     return self.boolean(std.mem.span(key), value);
 }
 
-export fn logger_level(self: Logger, lvl: Level) callconv(.c) Logger {
+export fn log_level(self: Logger, lvl: Level) callconv(.c) Logger {
     return self.level(lvl);
 }
 
-export fn logger_log(self: Logger) callconv(.c) void {
+export fn log_log(self: Logger) callconv(.c) void {
     self.log();
 }
 
-export fn logger_release(self: Logger) callconv(.c) void {
+export fn log_release(self: Logger) callconv(.c) void {
     self.release();
 }
 
-export fn logger_deinit(self: Logger) callconv(.c) void {
+export fn log_deinit(self: Logger) callconv(.c) void {
     self.deinit();
 }
 
-export fn logger_reset(self: Logger) callconv(.c) void {
+export fn log_reset(self: Logger) callconv(.c) void {
     self.reset();
 }
 

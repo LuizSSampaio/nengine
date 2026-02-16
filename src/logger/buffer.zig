@@ -27,7 +27,7 @@ pub const Buffer = struct {
         switch (self.sizeCheck(data.len)) {
             .buf => self.writeAllBuf(data),
             .acquire_large => |available| {
-                const larger = (self.pool.acquireLarge() catch return error.NoSpaceLeft) orelse return error.NoSpaceLeft;
+                const larger = self.pool.acquireLarge() catch return error.NoSpaceLeft;
 
                 const pos = self.pos;
                 const buf = self.buf;
@@ -57,7 +57,7 @@ pub const Buffer = struct {
             return error.NoSpaceLeft;
         }
 
-        const large = (self.pool.acquireLarge() catch return error.NoSpaceLeft) orelse return error.NoSpaceLeft;
+        const large = self.pool.acquireLarge() catch return error.NoSpaceLeft;
         large[0] = b;
         self.buf = large;
         self.pos = 1;
@@ -75,7 +75,7 @@ pub const Buffer = struct {
                 self.pos = pos + n;
             },
             .acquire_large => |available| {
-                const larger = (self.pool.acquireLarge() catch return error.NoSpaceLeft) orelse return error.NoSpaceLeft;
+                const larger = self.pool.acquireLarge() catch return error.NoSpaceLeft;
 
                 for (0..available) |i| {
                     buf[pos + i] = b;
@@ -167,26 +167,6 @@ pub const Buffer = struct {
         }
         self.pos = rewind.pos;
     }
-
-    pub fn writer(self: *Buffer) Writer.IOWriter {
-        return .{ .context = Writer.init(self) };
-    }
-
-    pub const Writer = struct {
-        w: *Buffer,
-
-        pub const Error = std.Allocator.Error;
-        pub const IOWriter = std.io.Writer(Writer, error{OutOfMemory}, Writer.write);
-
-        fn init(w: *Buffer) Writer {
-            return .{ .w = w };
-        }
-
-        pub fn write(self: Writer, data: []const u8) std.Allocator.Error!usize {
-            self.w.writeAll(data) catch return error.OutOfMemory;
-            return data.len;
-        }
-    };
 };
 
 pub const AttributeWriter = struct {

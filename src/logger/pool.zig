@@ -14,12 +14,13 @@ pub const Pool = struct {
     log_mutex: std.Thread.Mutex,
     pool_mutex: std.Thread.Mutex,
 
-    avaible: usize,
+    available: usize,
     loggers: []Logger,
     allocator: std.mem.Allocator,
     buffer_pool: BufferPool,
 
-    file: std.fs.File,
+    threaded: std.Io.Threaded,
+    file_writer: std.Io.File.Writer,
 
     pub fn init(allocator: std.mem.Allocator, config: Config) !*Pool {
         const loggers = try allocator.alloc(Logger, config.pool_size);
@@ -31,26 +32,20 @@ pub const Pool = struct {
         const pool = try allocator.create(Pool);
         errdefer allocator.destroy(pool);
 
-        const file = blk: {
-            var f = std.fs.cwd().openFile(config.output, .{ .mode = .read_write }) catch |e| switch (e) {
-                error.FileNotFound => break :blk try std.fs.cwd().createFile(config.output, .{}),
-                else => return e,
-            };
+        var threaded: std.Io.Threaded = .init(std.heap.c_allocator, .{ .environ = .empty });
 
-            const stat = try f.stat();
-            try f.seekTo(stat.size);
-            break :blk f;
-        };
+        const file_writer = std.Io.File.stdout().writer(threaded.io(), &.{});
 
         pool.* = .{
             .config = config,
             .log_mutex = .{},
             .pool_mutex = .{},
-            .avaible = config.pool_size,
+            .available = config.pool_size,
             .loggers = loggers,
             .allocator = allocator,
             .buffer_pool = buffer_pool,
-            .file = file,
+            .threaded = threaded,
+            .file_writer = file_writer,
         };
 
         var initialized: usize = 0;
@@ -70,15 +65,13 @@ pub const Pool = struct {
 
     pub fn deinit(self: *@This()) void {
         for (self.loggers) |l| {
-            self.allocator.free(l);
+            self.destroyLogger(l);
         }
         self.buffer_pool.deinit();
         self.allocator.free(self.loggers);
 
-        const handle = self.file.handle;
-        if (handle != std.fs.File.stderr().handle and handle != std.fs.File.stdout().handle) {
-            self.file.close();
-        }
+        self.threaded.deinit();
+
         self.allocator.destroy(self);
     }
 
@@ -136,7 +129,7 @@ pub const Pool = struct {
     }
 
     pub fn logger(self: *@This()) Logger {
-        if (self.level == @intFromEnum(log.Level.None)) return noop;
+        if (self.config.minimum_level == @intFromEnum(log.Level.None)) return noop;
         return self.acquire();
     }
 
@@ -147,7 +140,7 @@ pub const Pool = struct {
     }
 
     pub fn shouldLog(self: *@This(), level: log.Level) bool {
-        return @intFromEnum(level) >= self.config.level;
+        return @intFromEnum(level) >= self.config.minimum_level;
     }
 
     fn loggerWithLevel(self: *@This(), lvl: log.Level) Logger {

@@ -5,10 +5,10 @@ const Buffer = @import("buffer.zig").Buffer;
 const logger = @import("root.zig");
 const Pool = @import("pool.zig").Pool;
 
-const META_LEN = "{\"@ts\":9999999999999,\"@l\":\"ERROR\",".len;
+const META_LEN = "{\"@l\":\"ERROR\",".len;
 
 pub const Format = struct {
-    out: std.fs.File,
+    out: *std.Io.Writer,
     lvl: logger.Level,
     meta: []u8,
     buffer: Buffer,
@@ -24,7 +24,7 @@ pub const Format = struct {
         errdefer allocator.free(meta);
 
         return .{
-            .out = pool.file,
+            .out = &pool.file_writer.interface,
             .lvl = .None,
             .meta = meta,
             .buffer = buffer,
@@ -381,37 +381,30 @@ pub const Format = struct {
             const prefix_len = meta.len - META_LEN;
             const meta_buf = meta[prefix_len..];
 
-            if (prefix_len == 0) {
-                @memcpy(meta_buf[0..7], "{\"@ts\":");
-            } else {
-                @memcpy(meta_buf[0..7], " \"@ts\":");
-            }
-            _ = std.fmt.printInt(meta_buf[7..], std.time.milliTimestamp(), 10, .lower, .{});
-
             switch (self.lvl) {
                 .Debug => {
-                    @memcpy(meta_buf[20..], ",\"@l\":\"DEBUG\",");
+                    @memcpy(meta_buf[0..META_LEN], "{\"@l\":\"DEBUG\",");
                     break :blk meta.len;
                 },
                 .Info => {
-                    @memcpy(meta_buf[20..33], ",\"@l\":\"INFO\",");
+                    @memcpy(meta_buf[0 .. META_LEN - 1], "{\"@l\":\"INFO\",");
                     break :blk meta.len - 1;
                 },
                 .Warn => {
-                    @memcpy(meta_buf[20..33], ",\"@l\":\"WARN\",");
+                    @memcpy(meta_buf[0 .. META_LEN - 1], "{\"@l\":\"WARN\",");
                     break :blk meta.len - 1;
                 },
                 .Error => {
-                    @memcpy(meta_buf[20..], ",\"@l\":\"ERROR\",");
+                    @memcpy(meta_buf[0..META_LEN], "{\"@l\":\"ERROR\",");
                     break :blk meta.len;
                 },
                 .Fatal => {
-                    @memcpy(meta_buf[20..], ",\"@l\":\"FATAL\",");
+                    @memcpy(meta_buf[0..META_LEN], "{\"@l\":\"FATAL\",");
                     break :blk meta.len;
                 },
                 else => {
-                    meta_buf[20] = ',';
-                    break :blk meta.len - 13;
+                    meta_buf[0] = '{';
+                    break :blk prefix_len + 1;
                 },
             }
         };
