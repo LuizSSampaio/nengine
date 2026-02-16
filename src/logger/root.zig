@@ -13,12 +13,13 @@ pub fn init(allocator: std.mem.Allocator) !void {
 }
 pub fn deinit() void {}
 
-pub const Level = enum {
+pub const Level = enum(u3) {
     Debug,
     Info,
     Warn,
     Error,
     Fatal,
+    None,
 };
 
 pub const Logger = struct {
