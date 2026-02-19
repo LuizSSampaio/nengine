@@ -17,8 +17,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const platform_mod = b.addModule("platform", .{
-        .root_source_file = b.path("src/platform/root.zig"),
+    const window_mod = b.addModule("window", .{
+        .root_source_file = b.path("src/window/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
@@ -32,13 +32,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "logger", .module = logger_mod },
-            .{ .name = "platform", .module = platform_mod },
+            .{ .name = "window", .module = window_mod },
         },
     });
     renderer_mod.addOptions("build_options", options);
 
     switch (pipeline) {
-        .opengl => enableOpenGL(b, target, optimize, platform_mod, renderer_mod),
+        .opengl => enableOpenGL(b, target, optimize, window_mod, renderer_mod),
     }
 
     const nengine_lib = b.addLibrary(.{
@@ -50,7 +50,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "logger", .module = logger_mod },
-                .{ .name = "platform", .module = platform_mod },
+                .{ .name = "window", .module = window_mod },
                 .{ .name = "renderer", .module = renderer_mod },
             },
         }),
@@ -64,12 +64,12 @@ pub fn build(b: *std.Build) void {
     });
 }
 
-fn enableOpenGL(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, platform: *std.Build.Module, renderer: *std.Build.Module) void {
+fn enableOpenGL(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, window: *std.Build.Module, renderer: *std.Build.Module) void {
     const zglfw = b.dependency("zglfw", .{});
-    platform.addImport("glfw", zglfw.module("root"));
+    window.addImport("glfw", zglfw.module("root"));
 
     if (target.result.os.tag != .emscripten) {
-        platform.linkLibrary(zglfw.artifact("glfw"));
+        window.linkLibrary(zglfw.artifact("glfw"));
     }
 
     const zopengl = b.dependency("zopengl", .{});
