@@ -1,6 +1,9 @@
+const std = @import("std");
 const glfw = @import("glfw");
 
 pub const windowProcAddress = glfw.getProcAddress;
+
+var global: ?*Window = null;
 
 pub const Window = struct {
     pointer: *glfw.Window,
@@ -8,8 +11,9 @@ pub const Window = struct {
     height: i32,
     title: [:0]const u8,
     vsync: bool,
+    allocator: std.mem.Allocator,
 
-    pub fn init(width: i32, height: i32, title: [:0]const u8, vsync: bool) !@This() {
+    pub fn init(allocator: std.mem.Allocator, width: i32, height: i32, title: [:0]const u8, vsync: bool) !*@This() {
         try glfw.init();
         errdefer glfw.terminate();
 
@@ -20,23 +24,33 @@ pub const Window = struct {
         glfw.windowHint(.opengl_forward_compat, true);
         glfw.windowHint(.doublebuffer, true);
 
-        const window = try glfw.createWindow(width, height, title, null);
-        errdefer window.destroy();
+        const pointer = try glfw.createWindow(width, height, title, null);
+        errdefer pointer.destroy();
 
-        glfw.makeContextCurrent(window);
+        glfw.makeContextCurrent(pointer);
         glfw.swapInterval(if (vsync) 1 else 0);
 
-        return .{
-            .pointer = window,
+        const window = try allocator.create(Window);
+        errdefer allocator.destroy(window);
+
+        window.* = .{
+            .pointer = pointer,
             .width = width,
             .height = height,
             .title = title,
             .vsync = vsync,
+            .allocator = allocator,
         };
+
+        global = window;
+
+        return window;
     }
 
     pub fn deinit(self: *@This()) void {
+        global = null;
         self.pointer.destroy();
+        self.allocator.destroy(self);
         glfw.terminate();
     }
 

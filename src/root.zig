@@ -8,19 +8,19 @@ const windowProcAddress = win.windowProcAddress;
 
 export fn run() callconv(.c) void {
     logger.info().string("engine", "Starting Engine").log();
-    var window = Window.init(1280, 720, "Nengine Window", true) catch {
-        logger.fatal().string("@err", "Failed to initialize window").log();
-        return;
-    };
-    defer window.deinit();
 
     var gpa: std.heap.DebugAllocator(.{}) = .init;
     defer {
         const status = gpa.deinit();
         if (status == .leak) std.debug.panic("Memory leak detected", .{});
     }
-
     const allocator = gpa.allocator();
+
+    var window = Window.init(allocator, 1280, 720, "Nengine Window", true) catch {
+        logger.fatal().string("@err", "Failed to initialize window").log();
+        return;
+    };
+    defer window.deinit();
 
     var render = renderer.Renderer.init(allocator, windowProcAddress) catch {
         logger.fatal().string("@err", "Failed to initialize renderer").log();
