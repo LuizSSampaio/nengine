@@ -17,12 +17,19 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const event_mod = b.addModule("event", .{
+        .root_source_file = b.path("src/event/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const window_mod = b.addModule("window", .{
         .root_source_file = b.path("src/window/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
             .{ .name = "logger", .module = logger_mod },
+            .{ .name = "event", .module = event_mod },
         },
     });
 
