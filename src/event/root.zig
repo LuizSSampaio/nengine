@@ -28,26 +28,26 @@ pub const EventManager = struct {
 
     pub fn deinit() !void {
         if (manager == null) {
-            return error.UnableToDeInitNullManager;
+            return error.NullManager;
         }
 
         const self = manager.?;
         self.pool.deinit(self.allocator);
         manager = null;
     }
-
-    pub fn dispatch(event: Event) !void {
-        if (manager == null) {
-            return error.UnableToDeInitNullManager;
-        }
-
-        const self = manager.?;
-        self.pool_mutex.lock();
-        defer self.pool_mutex.unlock();
-        errdefer self.pool_mutex.unlock();
-
-        try self.pool.append(self.allocator, event);
-    }
 };
+
+pub fn dispatch(event: Event) !void {
+    if (manager == null) {
+        return error.NullManager;
+    }
+
+    var self = manager.?;
+    self.pool_mutex.lock();
+    defer self.pool_mutex.unlock();
+    errdefer self.pool_mutex.unlock();
+
+    try self.pool.append(self.allocator, event);
+}
 
 // export fn dispatchWindowCloseEvent() callconv(.c) c_int {}
