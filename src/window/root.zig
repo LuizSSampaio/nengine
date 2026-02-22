@@ -1,5 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
+const event = @import("event");
+const log = @import("logger");
 
 pub const windowProcAddress = glfw.getProcAddress;
 
@@ -30,6 +32,10 @@ pub const Window = struct {
         glfw.makeContextCurrent(pointer);
         glfw.swapInterval(if (vsync) 1 else 0);
 
+        _ = glfw.setFramebufferSizeCallback(pointer, glfwResizeCallback);
+        _ = glfw.setWindowCloseCallback(pointer, glfwWindowCloseCallback);
+        _ = glfw.setKeyCallback(pointer, glfwWindowKeyCallback);
+
         const window = try allocator.create(Window);
         errdefer allocator.destroy(window);
 
@@ -59,6 +65,7 @@ pub const Window = struct {
         self.pointer.swapBuffers();
     }
 
+    // TODO: Remove this method
     pub fn shouldClose(self: *@This()) bool {
         return self.pointer.shouldClose();
     }
@@ -66,5 +73,48 @@ pub const Window = struct {
     pub fn setVsync(self: *@This(), enable: bool) void {
         self.vsync = enable;
         glfw.swapInterval(if (enable) 1 else 0);
+    }
+
+    fn glfwResizeCallback(window: *glfw.Window, width: c_int, height: c_int) callconv(.c) void {
+        _ = window;
+        if (global) |g| {
+            g.width = width;
+            g.height = height;
+        }
+
+        event.dispatch(.{
+            .window = .{
+                .resize = .{
+                    .width = width,
+                    .height = height,
+                },
+            },
+        }) catch |err| {
+            log.err().string("msg", "Error on dispatch window resize event").err(err).log();
+        };
+    }
+
+    fn glfwWindowCloseCallback(window: *glfw.Window) callconv(.c) void {
+        _ = window;
+        event.dispatch(.{
+            .window = .close,
+        }) catch |err| {
+            log.err().string("msg", "Error on dispatch window close event").err(err).log();
+        };
+    }
+
+    fn glfwWindowKeyCallback(
+        window: *glfw.Window,
+        key: glfw.Key,
+        scancode: c_int,
+        action: glfw.Action,
+        mods: glfw.Mods,
+    ) callconv(.c) void {
+        _ = window;
+        _ = key;
+        _ = scancode;
+        _ = action;
+        _ = mods;
+        // TODO: Emit window key event
     }
 };
