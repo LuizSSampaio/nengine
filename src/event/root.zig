@@ -14,7 +14,7 @@ pub const EventManager = struct {
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, buffer_size: usize) !void {
-        const pool: std.ArrayList(Event) = .empty;
+        var pool: std.ArrayList(Event) = .empty;
         errdefer pool.deinit(allocator);
 
         try pool.ensureTotalCapacity(allocator, buffer_size);
@@ -31,7 +31,7 @@ pub const EventManager = struct {
             return error.NullManager;
         }
 
-        const self = manager.?;
+        var self = manager.?;
         self.pool.deinit(self.allocator);
         manager = null;
     }
