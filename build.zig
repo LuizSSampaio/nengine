@@ -59,6 +59,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "logger", .module = logger_mod },
                 .{ .name = "window", .module = window_mod },
                 .{ .name = "renderer", .module = renderer_mod },
+                .{ .name = "event", .module = event_mod },
             },
         }),
     });

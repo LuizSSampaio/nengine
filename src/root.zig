@@ -2,6 +2,7 @@ const std = @import("std");
 
 const logger = @import("logger");
 const renderer = @import("renderer");
+const event = @import("event");
 const win = @import("window");
 const Window = win.Window;
 const windowProcAddress = win.windowProcAddress;
@@ -15,6 +16,14 @@ export fn run() callconv(.c) void {
         if (status == .leak) std.debug.panic("Memory leak detected", .{});
     }
     const allocator = gpa.allocator();
+
+    event.EventManager.init(allocator, 128) catch |e| {
+        logger.fatal().err(e).string("@msg", "Failed to initialize EventManager").log();
+        return;
+    };
+    defer event.EventManager.deinit() catch |e| {
+        logger.warn().err(e).log();
+    };
 
     var window = Window.init(allocator, 1280, 720, "Nengine Window", true) catch {
         logger.fatal().string("@err", "Failed to initialize window").log();
