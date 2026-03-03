@@ -6,7 +6,8 @@ pub const WindowEvent = event_mod.WindowEvent;
 pub const KeyEvent = event_mod.KeyEvent;
 pub const MouseEvent = event_mod.MouseEvent;
 
-pub const EventCallback = *const fn (event: *const Event) void;
+pub const EventContext = *anyopaque;
+pub const EventCallback = *const fn (context: EventContext, event: *const Event) void;
 pub const EventTypes = blk: {
     if (@typeInfo(Event) != .@"union") {
         @compileError("Event must be an union");
@@ -15,6 +16,7 @@ pub const EventTypes = blk: {
 };
 
 pub const HandlerNode = struct {
+    context: EventContext,
     callback: EventCallback,
     event: std.meta.Tag(Event),
     node: std.SinglyLinkedList.Node = .{},
@@ -81,7 +83,7 @@ pub fn dispatch(event: Event) !void {
     try self.pool.append(self.allocator, event);
 }
 
-pub fn addHandler(event: std.meta.Tag(Event), callback: EventCallback) !*HandlerNode {
+pub fn addHandler(event: std.meta.Tag(Event), context: EventContext, callback: EventCallback) !*HandlerNode {
     if (manager == null) {
         return error.NullManager;
     }
@@ -91,6 +93,7 @@ pub fn addHandler(event: std.meta.Tag(Event), callback: EventCallback) !*Handler
 
     const node = self.allocator.create(HandlerNode);
     node.* = .{
+        .context = context,
         .callback = callback,
         .event = event,
         .node = .{},
