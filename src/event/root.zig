@@ -16,7 +16,7 @@ pub const EventTypes = blk: {
 
 pub const HandlerNode = struct {
     callback: EventCallback,
-    event: Event,
+    event: std.meta.Tag(Event),
     node: std.SinglyLinkedList.Node = .{},
 };
 
@@ -81,7 +81,7 @@ pub fn dispatch(event: Event) !void {
     try self.pool.append(self.allocator, event);
 }
 
-pub fn addHandler(event: Event, callback: EventCallback) !*HandlerNode {
+pub fn addHandler(event: std.meta.Tag(Event), callback: EventCallback) !*HandlerNode {
     if (manager == null) {
         return error.NullManager;
     }
