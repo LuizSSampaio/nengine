@@ -14,23 +14,26 @@ pub const EventTypes = blk: {
     break :blk std.meta.fields(Event).len;
 };
 
+pub const HandlerNode = struct {
+    callback: EventCallback,
+    event: Event,
+    node: std.SinglyLinkedList.Node = .{},
+};
+
 pub var manager: ?EventManager = null;
 pub const EventManager = struct {
     pool_mutex: std.Thread.Mutex,
 
     pool: std.ArrayList(Event),
-    handlers: [EventTypes]std.ArrayList(EventCallback),
+    handlers: [EventTypes]std.SinglyLinkedList,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, buffer_size: usize) !void {
         var pool: std.ArrayList(Event) = .empty;
         errdefer pool.deinit(allocator);
 
-        var handlers: [EventTypes]std.ArrayList(EventCallback) = undefined;
-        for (&handlers) |*h| h.* = .empty;
-        errdefer {
-            for (&handlers) |*h| h.deinit(allocator);
-        }
+        var handlers: [EventTypes]std.SinglyLinkedList = undefined;
+        for (&handlers) |*h| h.* = .{};
 
         try pool.ensureTotalCapacity(allocator, buffer_size);
 
@@ -48,8 +51,19 @@ pub const EventManager = struct {
         }
 
         var self = manager.?;
+
         self.pool.deinit(self.allocator);
-        for (&self.handlers) |*h| h.deinit(self.allocator);
+
+        for (&self.handlers) |*list| {
+            var handler = list.first;
+            while (handler) |h| {
+                const next = h.next;
+                const node: *HandlerNode = @fieldParentPtr("node", h);
+                self.allocator.destroy(node);
+                handler = next;
+            }
+        }
+
         manager = null;
     }
 };
@@ -65,6 +79,37 @@ pub fn dispatch(event: Event) !void {
     errdefer self.pool_mutex.unlock();
 
     try self.pool.append(self.allocator, event);
+}
+
+pub fn addHandler(event: Event, callback: EventCallback) !*HandlerNode {
+    if (manager == null) {
+        return error.NullManager;
+    }
+
+    var self = manager.?;
+    const idx = @intFromEnum(event);
+
+    const node = self.allocator.create(HandlerNode);
+    node.* = .{
+        .callback = callback,
+        .event = event,
+        .node = .{},
+    };
+
+    self.handlers[idx].prepend(node);
+    return node;
+}
+
+pub fn removeHandler(handler: *HandlerNode) !void {
+    if (manager == null) {
+        return error.NullManager;
+    }
+
+    var self = manager.?;
+    const idx = @intFromEnum(handler.event);
+
+    self.handlers[idx].remove(handler);
+    self.allocator.destroy(handler);
 }
 
 // export fn dispatchWindowCloseEvent() callconv(.c) c_int {}
