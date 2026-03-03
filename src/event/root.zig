@@ -5,36 +5,21 @@ pub const Event = event_mod.Event;
 pub const WindowEvent = event_mod.WindowEvent;
 pub const KeyEvent = event_mod.KeyEvent;
 pub const MouseEvent = event_mod.MouseEvent;
-
-pub const EventContext = *anyopaque;
-pub const EventCallback = *const fn (context: EventContext, event: *const Event) void;
-pub const EventTypes = blk: {
-    if (@typeInfo(Event) != .@"union") {
-        @compileError("Event must be an union");
-    }
-    break :blk std.meta.fields(Event).len;
-};
-
-pub const HandlerNode = struct {
-    context: EventContext,
-    callback: EventCallback,
-    event: std.meta.Tag(Event),
-    node: std.SinglyLinkedList.Node = .{},
-};
+pub const handler = @import("handler.zig");
 
 pub var manager: ?EventManager = null;
 pub const EventManager = struct {
     pool_mutex: std.Thread.Mutex,
 
     pool: std.ArrayList(Event),
-    handlers: [EventTypes]std.SinglyLinkedList,
+    handlers: [handler.EventCount]handler.ListType,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, buffer_size: usize) !void {
         var pool: std.ArrayList(Event) = .empty;
         errdefer pool.deinit(allocator);
 
-        var handlers: [EventTypes]std.SinglyLinkedList = undefined;
+        var handlers: [handler.EventCount]handler.ListType = undefined;
         for (&handlers) |*h| h.* = .{};
 
         try pool.ensureTotalCapacity(allocator, buffer_size);
@@ -57,12 +42,12 @@ pub const EventManager = struct {
         self.pool.deinit(self.allocator);
 
         for (&self.handlers) |*list| {
-            var handler = list.first;
-            while (handler) |h| {
+            var current = list.first;
+            while (current) |h| {
                 const next = h.next;
-                const node: *HandlerNode = @fieldParentPtr("node", h);
+                const node: *handler.Node = @fieldParentPtr("node", h);
                 self.allocator.destroy(node);
-                handler = next;
+                current = next;
             }
         }
 
@@ -83,7 +68,7 @@ pub fn dispatch(event: Event) !void {
     try self.pool.append(self.allocator, event);
 }
 
-pub fn addHandler(event: std.meta.Tag(Event), context: EventContext, callback: EventCallback) !*HandlerNode {
+pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback: handler.Callback) !*handler.Node {
     if (manager == null) {
         return error.NullManager;
     }
@@ -91,7 +76,7 @@ pub fn addHandler(event: std.meta.Tag(Event), context: EventContext, callback: E
     var self = manager.?;
     const idx = @intFromEnum(event);
 
-    const node = self.allocator.create(HandlerNode);
+    const node = self.allocator.create(handler.Node);
     node.* = .{
         .context = context,
         .callback = callback,
@@ -103,16 +88,16 @@ pub fn addHandler(event: std.meta.Tag(Event), context: EventContext, callback: E
     return node;
 }
 
-pub fn removeHandler(handler: *HandlerNode) !void {
+pub fn removeHandler(node: *handler.Node) !void {
     if (manager == null) {
         return error.NullManager;
     }
 
     var self = manager.?;
-    const idx = @intFromEnum(handler.event);
+    const idx = @intFromEnum(node.event);
 
-    self.handlers[idx].remove(handler);
-    self.allocator.destroy(handler);
+    self.handlers[idx].remove(node);
+    self.allocator.destroy(node);
 }
 
 // export fn dispatchWindowCloseEvent() callconv(.c) c_int {}
