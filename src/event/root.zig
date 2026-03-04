@@ -37,7 +37,7 @@ pub const EventManager = struct {
             return error.NullManager;
         }
 
-        var self = manager.?;
+        var self = &manager.?;
 
         self.pool.deinit(self.allocator);
 
@@ -60,12 +60,12 @@ pub fn dispatch(event: Event) !void {
         return error.NullManager;
     }
 
-    var self = manager.?;
     self.pool_mutex.lock();
     defer self.pool_mutex.unlock();
     errdefer self.pool_mutex.unlock();
 
     try self.pool.append(self.allocator, event);
+    var self = &manager.?;
 }
 
 pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback: handler.Callback) !*handler.Node {
@@ -73,7 +73,7 @@ pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback
         return error.NullManager;
     }
 
-    var self = manager.?;
+    var self = &manager.?;
     const idx = @intFromEnum(event);
 
     const node = self.allocator.create(handler.Node);
@@ -93,7 +93,7 @@ pub fn removeHandler(node: *handler.Node) !void {
         return error.NullManager;
     }
 
-    var self = manager.?;
+    var self = &manager.?;
     const idx = @intFromEnum(node.event);
 
     self.handlers[idx].remove(node);
