@@ -6,27 +6,22 @@ pub const WindowEvent = event_mod.WindowEvent;
 pub const KeyEvent = event_mod.KeyEvent;
 pub const MouseEvent = event_mod.MouseEvent;
 pub const handler = @import("handler.zig");
+pub const queue = @import("queue.zig");
 
 pub var manager: ?EventManager = null;
 pub const EventManager = struct {
-    pool_mutex: std.Thread.Mutex,
-
-    pool: std.ArrayList(Event),
+    queue: queue.EventQueue,
     handlers: [handler.EventCount]handler.ListType,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, buffer_size: usize) !void {
-        var pool: std.ArrayList(Event) = .empty;
-        errdefer pool.deinit(allocator);
+    pub fn init(allocator: std.mem.Allocator) void {
+        const q = queue.EventQueue.init(allocator);
 
         var handlers: [handler.EventCount]handler.ListType = undefined;
         for (&handlers) |*h| h.* = .{};
 
-        try pool.ensureTotalCapacity(allocator, buffer_size);
-
         manager = .{
-            .pool_mutex = .{},
-            .pool = pool,
+            .queue = q,
             .handlers = handlers,
             .allocator = allocator,
         };
@@ -39,7 +34,7 @@ pub const EventManager = struct {
 
         var self = &manager.?;
 
-        self.pool.deinit(self.allocator);
+        self.queue.deinit();
 
         for (&self.handlers) |*list| {
             var current = list.first;
@@ -55,17 +50,13 @@ pub const EventManager = struct {
     }
 };
 
-pub fn dispatch(event: Event) !void {
+pub fn dispatch(event: Event, priority: u8) !void {
     if (manager == null) {
         return error.NullManager;
     }
 
-    self.pool_mutex.lock();
-    defer self.pool_mutex.unlock();
-    errdefer self.pool_mutex.unlock();
-
-    try self.pool.append(self.allocator, event);
     var self = &manager.?;
+    try self.queue.push(event, priority);
 }
 
 pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback: handler.Callback) !*handler.Node {
