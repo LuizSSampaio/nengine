@@ -89,7 +89,7 @@ pub const Window = struct {
                     .height = height,
                 },
             },
-        }) catch |err| {
+        }, 0) catch |err| {
             log.err().string("msg", "Error on dispatch window resize event").err(err).log();
         };
     }
@@ -98,7 +98,7 @@ pub const Window = struct {
         _ = window;
         event.dispatch(.{
             .window = .close,
-        }) catch |err| {
+        }, 0) catch |err| {
             log.err().string("msg", "Error on dispatch window close event").err(err).log();
         };
     }
