@@ -50,5 +50,8 @@ export fn run() callconv(.c) void {
             return;
         };
         window.update();
+        event.poolEvents(.{}) catch |e| {
+            logger.err().err(e).string("@err", "Fail pooling events").log();
+        };
     }
 }
