@@ -91,4 +91,24 @@ pub fn removeHandler(node: *handler.Node) !void {
     self.allocator.destroy(node);
 }
 
+pub fn poolEvents(config: struct { max_events: u32 = 128 }) !void {
+    if (manager == null) {
+        return error.NullManager;
+    }
+
+    var self = &manager.?;
+
+    var count: u32 = 0;
+    while (count < config.max_events) : (count += 1) {
+        const event = self.queue.pop() orelse break;
+
+        const idx = @intFromEnum(event);
+        var node = self.handlers[idx].first;
+        while (node) |n| : (node = n.next) {
+            const hn: *handler.Node = @fieldParentPtr("node", n);
+            hn.callback(hn.context, &event);
+        }
+    }
+}
+
 // export fn dispatchWindowCloseEvent() callconv(.c) c_int {}
