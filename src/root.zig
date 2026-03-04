@@ -17,10 +17,7 @@ export fn run() callconv(.c) void {
     }
     const allocator = gpa.allocator();
 
-    event.EventManager.init(allocator, 128) catch |e| {
-        logger.fatal().err(e).string("@msg", "Failed to initialize EventManager").log();
-        return;
-    };
+    event.EventManager.init(allocator);
     defer event.EventManager.deinit() catch |e| {
         logger.warn().err(e).log();
     };
