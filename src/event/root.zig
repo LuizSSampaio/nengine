@@ -67,7 +67,7 @@ pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback
     var self = &manager.?;
     const idx = @intFromEnum(event);
 
-    const node = self.allocator.create(handler.Node);
+    const node = try self.allocator.create(handler.Node);
     node.* = .{
         .context = context,
         .callback = callback,
@@ -75,7 +75,7 @@ pub fn addHandler(event: std.meta.Tag(Event), context: handler.Context, callback
         .node = .{},
     };
 
-    self.handlers[idx].prepend(node);
+    self.handlers[idx].prepend(&node.node);
     return node;
 }
 
@@ -87,7 +87,7 @@ pub fn removeHandler(node: *handler.Node) !void {
     var self = &manager.?;
     const idx = @intFromEnum(node.event);
 
-    self.handlers[idx].remove(node);
+    self.handlers[idx].remove(&node.node);
     self.allocator.destroy(node);
 }
 
