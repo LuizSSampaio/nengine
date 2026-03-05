@@ -1,4 +1,5 @@
 const std = @import("std");
+const logger = @import("logger");
 
 const event_mod = @import("event.zig");
 pub const Event = event_mod.Event;
@@ -111,4 +112,101 @@ pub fn poolEvents(config: struct { max_events: u32 = 128 }) !void {
     }
 }
 
-// export fn dispatchWindowCloseEvent() callconv(.c) c_int {}
+export fn dispatchWindowCloseEvent(priority: u8) callconv(.c) c_int {
+    dispatch(.{ .window = .close }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchWindowResizeEvent(width: i32, height: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{
+        .window = .{
+            .resize = .{
+                .width = width,
+                .height = height,
+            },
+        },
+    }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchWindowFocusEvent(focused: bool, priority: u8) callconv(.c) c_int {
+    dispatch(.{ .window = .{ .focus = focused } }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchWindowMovedEvent(x: i32, y: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{
+        .window = .{
+            .moved = .{
+                .x = x,
+                .y = y,
+            },
+        },
+    }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchKeyPressedEvent(keycode: i32, repeat: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{
+        .key = .{
+            .pressed = .{
+                .keycode = keycode,
+                .repeat = repeat,
+            },
+        },
+    }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchKeyReleasedEvent(keycode: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{ .key = .{ .released = .{ .keycode = keycode } } }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchMouseMovedEvent(x: i32, y: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{
+        .mouse = .{
+            .moved = .{
+                .x = x,
+                .y = y,
+            },
+        },
+    }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}
+
+export fn dispatchMouseScrolledEvent(x_offset: i32, y_offset: i32, priority: u8) callconv(.c) c_int {
+    dispatch(.{
+        .mouse = .{
+            .scrolled = .{
+                .xOffset = x_offset,
+                .yOffset = y_offset,
+            },
+        },
+    }, priority) catch |e| {
+        logger.err().err(e).string("@err", "Fail on dipatch event").log();
+        return -1;
+    };
+    return 0;
+}

@@ -21,6 +21,9 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/event/root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "logger", .module = logger_mod },
+        },
     });
 
     const window_mod = b.addModule("window", .{
